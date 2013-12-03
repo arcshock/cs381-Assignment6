@@ -1,0 +1,26 @@
+Authors: Paul Gentemann
+	 Bucky Frost	
+Date: Mon Dec 2, 22:15:36 AKST 2013
+File: cs381_exerciseA_A06.txt
+Purpose: Provide a discription of the web page
+	 http://www.cs.uaf.edu/2013/fall/cs381/code/check_webgl.html
+	 for exercise A of assignment 6.
+
+	The web page has a title of 'Check that WebGL Works'. In the top left
+of the page is a 4 lines of text. They are: Is WebGL working?, Space Restart 
+bouncing, R Toggle rotation, [] Change rotation speed. The background color
+of the web page is a light shade of brown. When the page is first accessed,
+there is a light pink, rotating, bouncing torus. There are also lighting
+effects on the surface of the torus. There is the diffuse lighting including
+the specular highlights from some light source that appears to be coming from
+the direction of the viewer. 
+	After an amount of time, the bouncing of the torus becomes less to the
+point that the torus comes to rest at the bottom of the screen. If the user as 
+not interacted with the keyboard, then the torus will continue to rotate
+there. The r key, shifted or not, will cause the torus to change the rotating
+state of the torus, it will also cause the text field in the documentation
+from off to ON depending on the state. The [ key will cause the rotation speed
+of the torus to decrease. While the ] key will cause an increase in the rotation
+speed of the torus. When the spacebar is press, the torus will have an effect
+of added energy that will make the torus to bounce more. Resizing the window
+keeps the aspect of the page. There are no easter eggs :(
