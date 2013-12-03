@@ -21,6 +21,6 @@ there. The r key, shifted or not, will cause the torus to change the rotating
 state of the torus, it will also cause the text field in the documentation
 from off to ON depending on the state. The [ key will cause the rotation speed
 of the torus to decrease. While the ] key will cause an increase in the rotation
-speed of the torus. When the spacebar is press, the torus will have an effect
+speed of the torus. When the space bar is press, the torus will have an effect
 of added energy that will make the torus to bounce more. Resizing the window
 keeps the aspect of the page. There are no easter eggs :(
