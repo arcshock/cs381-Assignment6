@@ -67,7 +67,7 @@ GLfloat shaderfloat1 = 1.;
 // Textures
 Tex2D tex0, tex1;
 const int IMG_WIDTH = 256, IMG_HEIGHT = IMG_WIDTH;
-GLubyte teximage1[IMG_HEIGHT*IMG_WIDTH][3];  // Temp storage for texture
+GLubyte teximage1[IMG_HEIGHT][IMG_WIDTH][3];  // Temp storage for texture
 
 int min_nonmip; // 0=NEAREST, 1=LINEAR
 int min_mip;	// 0=NEAREST, 1=LINEAR, 2=NON
