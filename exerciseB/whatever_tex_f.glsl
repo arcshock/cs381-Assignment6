@@ -1,38 +1,62 @@
 // whatever_tex_f.glsl
-// Glenn G. Chappell
-// 1 Nov 2012
-//
-// For CS 381 Fall 2013
+// Bucky Frost and Paul Gentemann
+// Dec 4, 2013
+// CS 381 
+
 // GLSL Fragment Shader for use with usetextures.cpp
-// Whatever I Feel Like Doing with Textures
+// Glass?
 
 uniform float myf1;        // Application float (in [0.,1.]; start: 1.)
 uniform bool myb1;         // Application bool (start: true)
 
-varying vec2 mytexcoord0;  // 2-D texture coordinates for texture 0
-varying vec2 mytexcoord1;  // 2-D texture coordinates for texture 1
-uniform sampler2D mytex0;  // 2-D texture 0
-uniform sampler2D mytex1;  // 2-D texture 1
-
+varying vec3 surfpt;       // Point on surface (camera coords)
+varying vec3 surfnorm_un;  // Surface normal (camera coords)
+uniform samplerCube mycube0; // A cube-map texture
+                           
 
 void main()
 {
-    // Get colors from textures
-    vec4 color0 = texture2D(mytex0, mytexcoord0);
-    vec4 color1 = texture2D(mytex1, mytexcoord1);
-
-    // Discard if high blue component
-    if (myb1 && color0.b > 0.6)
-        discard;
-
-    // Set fragment color, changing it for a backface.
-    vec4 thecolor = mix(color1, color0, myf1);
+    // Find our normal vector & viewing direction
+    vec3 surfnorm = normalize(surfnorm_un);
     if (!gl_FrontFacing)
     {
-        thecolor.b += 0.2;
-        if (thecolor.b > 1.)
-            thecolor.b -= 1.;
+        surfnorm = -surfnorm;
     }
-    gl_FragColor = thecolor;
+    vec3 viewdir = normalize(surfpt);
+
+    // *** Reflection mapping ***
+    vec3 reflectview = normalize(reflect(viewdir, surfnorm));
+    vec4 reflectmapcolor = textureCube(mycube0, reflectview);
+
+    // *** Refraction mapping ***
+    float indexbase = 1.1;            // Base refractive index
+    float indexdelta = 0.005 * myf1;  // Change in refractive index by
+                                      //  frequency; for chromatic
+                                      //  aberration
+                                      
+    vec4 refractmapcolor = vec4(0., 0., 0., 1.);
+
+    // Red
+    float index_r = indexbase - indexdelta;
+    vec3 refractview_r = normalize(refract(viewdir, surfnorm, 1./index_r));
+    refractmapcolor.r = textureCube(mycube0, refractview_r).r;
+
+    // Green
+    float index_g = indexbase;
+    vec3 refractview_g = normalize(refract(viewdir, surfnorm, 1./index_g));
+    refractmapcolor.g = textureCube(mycube0, refractview_g).g;
+
+    // Blue
+    float index_b = indexbase + indexdelta;
+    vec3 refractview_b = normalize(refract(viewdir, surfnorm, 1./index_b));
+    refractmapcolor.b = textureCube(mycube0, refractview_b).b;
+
+    // *** Final color ***
+    // Mix refraction & reflection according to how close viewing dir
+    //  is to the normal.
+    float t = max(0., dot(-viewdir, surfnorm));
+    if (!myb1)
+        t = 0.8;
+    gl_FragColor = mix(reflectmapcolor, refractmapcolor, t);
 }
 
