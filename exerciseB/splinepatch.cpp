@@ -40,7 +40,7 @@ using std::sin; using std::exp;
 // Function prototypes
 void documentation();
 void waveFun(GLdouble *, int, int);
-void drawBezierPatch(int, GLdouble *);
+void drawBezierPatch(int, GLdouble *, int);
 void myDisplay();
 void myIdle();
 void resetZoom();
@@ -65,7 +65,8 @@ GLhandleARB prog1;             // GLSL Program Object
 GLfloat shaderfloat1 = 1.;
 
 // Textures
-Tex2D tex0, tex1;
+//Tex2D tex0, tex1;
+TexCube cube0;
 const int IMG_WIDTH = 256, IMG_HEIGHT = IMG_WIDTH;
 GLubyte teximage1[IMG_HEIGHT][IMG_WIDTH][3];  // Temp storage for texture
 
@@ -112,8 +113,10 @@ void waveFun(GLdouble *arr, int column, int axis)
 // drawBezierPatch
 // Draws a number of control points for a bezier patch. The z coordinates 
 // of all the points are translated by the sine of the mod parameter.
-void drawBezierPatch(int subdivs, GLdouble *cpts)
+void drawBezierPatch(int subdivs, GLdouble *cpts, int tanloc = -1)
 {
+    if(tanloc != -1)
+        glVertexAttrib3dARB(tanloc, 1.0, 0.0, 0.0);
     glColor3d(0.,0.,0.5);
     glMap2d(GL_MAP2_VERTEX_3, 0., 1., 3, 4, 0., 1., 3*4, 4, cpts);
     glEnable(GL_MAP2_VERTEX_3);
@@ -131,7 +134,7 @@ void drawBezierPatch(int subdivs, GLdouble *cpts)
 // The GLUT display function
 void myDisplay()
 {
-    GLenum minfilters[] = 
+/*    GLenum minfilters[] = 
     { GL_NEAREST_MIPMAP_NEAREST,
       GL_LINEAR_MIPMAP_NEAREST,
       GL_NEAREST_MIPMAP_LINEAR,
@@ -143,21 +146,21 @@ void myDisplay()
     tex0.bind();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
         minfilters[min_mip*2 + min_nonmip]);
-
+*/
     glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     GLhandleARB theprog;  // CURRENTLY-used program object or 0 if none
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // Activate shaders
     theprog = prog1;
-
+/*
     // Texture transform
     glActiveTexture(GL_TEXTURE0);
     glMatrixMode(GL_TEXTURE);
     glLoadIdentity();
 //    glRotated(texrotang, 0.0, 0.0, 1.0);
     glMatrixMode(GL_MODELVIEW);
-
+*/
     glEnable(GL_DEPTH_TEST);    // Set up 3D
     glLoadIdentity();           // Start with camera.
     glMultMatrixd(viewmatrix);
@@ -175,6 +178,7 @@ void myDisplay()
     glUseProgramObjectARB(theprog);
 
     //Send info to shader
+    GLint tanloc = -1;
     if (theprog)
     {
         GLint loc;  // Location for shader vars
@@ -184,9 +188,10 @@ void myDisplay()
         loc = glGetUniformLocationARB(theprog, "myf1");
         if (loc != -1)
             glUniform1f(loc, shaderfloat1);
-        loc = glGetUniformLocationARB(theprog, "mytex0");
+        loc = glGetUniformLocationARB(theprog, "mycube0"); //to texture channel
 	if (loc != -1)
 	    glUniform1i(loc, 0);
+	tanloc = glGetAttribLocationARB(theprog, "vtangent_in"); //pass tanloc to draw funcs
     }
 
     // Draw Objects
@@ -200,7 +205,7 @@ void myDisplay()
         waveFun(b2, 1, 2);  // Second set of points.
     }
 
-    drawBezierPatch(numsubdivs, b1);
+    drawBezierPatch(numsubdivs, b1, tanloc);
     drawBezierPatch(numsubdivs, b2);
     documentation();    
 
@@ -348,6 +353,11 @@ void init()
     wave = false;
     numsubdivs = 10;
     wireFrame = false;
+
+    // Texture
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+    glActiveTexture(GL_TEXTURE0);
+    cube0.bind();
 
     // Shaders
     prog1 = makeProgramObjectFromFiles(vshader1fname, fshader1fname);
