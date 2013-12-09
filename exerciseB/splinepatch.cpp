@@ -25,6 +25,7 @@ using std::exit;
 #include "lib381/glslprog.h"      // For GLSL code-handling functions
 #include "lib381/globj.h" 	  // For class Tex2D
 #include "lib381/tshapes.h"	  // For shape drawing funcs
+#include "lib381/rtt.h"	  // For rendering to a texture 
 
 #include <string>
 using std::string;
@@ -61,14 +62,13 @@ bool wireFrame;
 bool shaderbool1 = true;
 string vshader1fname;          // Filename for vertex shader source
 string fshader1fname;          // Filename for fragment shader source
-GLhandleARB prog1;             // GLSL Program Object
+GLhandleARB prog1;             // GLSL Program Object (main)
+GLhandleARB prog2;             // GLSL Program Object (2side)
 GLfloat shaderfloat1 = 1.;
 
 // Textures
-//Tex2D tex0, tex1;
-TexCube cube0;
-const int IMG_WIDTH = 256, IMG_HEIGHT = IMG_WIDTH;
-GLubyte teximage1[IMG_HEIGHT][IMG_WIDTH][3];  // Temp storage for texture
+const int IMG_WIDTH = 1024, IMG_HEIGHT = IMG_WIDTH;
+RTT cube0;
 
 int min_nonmip; // 0=NEAREST, 1=LINEAR
 int min_mip;	// 0=NEAREST, 1=LINEAR, 2=NON
@@ -113,10 +113,8 @@ void waveFun(GLdouble *arr, int column, int axis)
 // drawBezierPatch
 // Draws a number of control points for a bezier patch. The z coordinates 
 // of all the points are translated by the sine of the mod parameter.
-void drawBezierPatch(int subdivs, GLdouble *cpts, int tanloc = -1)
+void drawBezierPatch(int subdivs, GLdouble *cpts)
 {
-    if(tanloc != -1)
-        glVertexAttrib3dARB(tanloc, 1.0, 0.0, 0.0);
     glColor3d(0.,0.,0.5);
     glMap2d(GL_MAP2_VERTEX_3, 0., 1., 3, 4, 0., 1., 3*4, 4, cpts);
     glEnable(GL_MAP2_VERTEX_3);
@@ -130,10 +128,193 @@ void drawBezierPatch(int subdivs, GLdouble *cpts, int tanloc = -1)
     glFrontFace(GL_CCW);
 }
 
+void drawSurroundings()
+{
+    // CHOOSE PROGRAM OBJECT
+    GLhandleARB theprog;  // CURRENTLY-used program object or 0 if none
+    
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            theprog = prog2;
+/*  // Shaders used? Wireframe?
+    switch (shade)
+    {
+        case 0:  // 0: filled polygons, use shaders, smooth
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            theprog = prog2;
+            break;
+        case 1:  // 1: filled polygons, no shader
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            theprog = 0;
+            break;
+        case 2:  // 2: wireframe, no shader
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            theprog = 0;
+            break;
+    }
+*/
+    // Initialize buffer
+    glClearColor(0.7f, 0.7f, 0.7f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+
+    // UNLIT OBJECTS
+
+    // No shaders
+    glUseProgramObjectARB(0);
+
+/*    // Draw background sphere
+    glPushMatrix();
+    glRotated(rotangle/2.3, -1.,2.,0.);
+    glScaled(10., 10., 10.);
+    drawCutSphere();
+    glPopMatrix();
+*/    
+
+    // Position light source 0 & draw ball there
+    // Also give spot direction
+    glPushMatrix();
+    glTranslated(0.0, 0.0, 1.0);
+//    glRotated(lightrotang, 1.,0.,0.);
+    glTranslated(-1., 1., 1.);
+    GLfloat origin4[] = { 0.f, 0.f, 0.f, 1.f };
+    glLightfv(GL_LIGHT0, GL_POSITION, origin4);
+    GLfloat spotdir[] = { 1.f, -1.f, -1.f };
+    glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, spotdir);
+    glColor3d(1., 1., 1.);
+    glutSolidSphere(0.1, 20, 15);
+    glPopMatrix();
+
+    // LIT OBJECTS
+
+    // Make program object (if any) active
+    glUseProgramObjectARB(theprog);
+
+    // Send values to shaders
+    if (theprog)
+    {
+        GLint loc;  // Location for shader vars
+
+        loc = glGetUniformLocationARB(theprog, "myb1");
+        if (loc != -1)
+            glUniform1i(loc, true);
+
+        loc = glGetUniformLocationARB(theprog, "myf1");
+        if (loc != -1)
+            glUniform1f(loc, 1.f);
+
+        // Send texture channels
+        loc = glGetUniformLocationARB(theprog, "mycube0");
+        if (loc != -1)
+            glUniform1i(loc, 0);
+    }
+
+    // Draw left side object
+    glPushMatrix();
+    glTranslated(-2.5, 0., 0.);
+//    glRotated(-rotangle/1.4, 1.,0.,0.);
+    glScaled(0.5, 0.5, 0.5);
+    glColor3d(0., 0.5, 1.0);
+    glFrontFace(GL_CW);  // Teapot has polygons facing in
+    glutSolidTeapot(1.);
+    glFrontFace(GL_CCW);
+    glPopMatrix();
+
+    // Draw right side object
+    glPushMatrix();
+    glTranslated(2.5, 0., 0.);
+//    glRotated(rotangle/1.4, 1.,0.,0.);
+    glScaled(0.5, 0.5, 0.5);
+    glColor3d(0.5, 0., 0.8);
+    glFrontFace(GL_CW);  // Teapot has polygons facing in
+    glutSolidTeapot(1.);
+    glFrontFace(GL_CCW);
+    glPopMatrix();
+
+    // Draw back object
+    glPushMatrix();
+    glTranslated(0., 0.5, -2.5);
+//    glRotated(rotangle/1.4, 1.,0.,0.);
+    glScaled(0.5, 0.5, 0.5);
+    glColor3d(0.5, 0.8, 0.);
+    glFrontFace(GL_CW);  // Teapot has polygons facing in
+    glutSolidTeapot(1.);
+    glFrontFace(GL_CCW);
+    glPopMatrix();
+    
+}
+
+void makeTextures()
+{
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluPerspective(90., 1., 0.1, 10.);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
+    // +x face
+    glPushMatrix();
+    glRotated(180., 0.,0.,1.);
+    glRotated(90., 0.,1.,0.);
+    cube0.beginRender(GL_TEXTURE_CUBE_MAP_POSITIVE_X);
+    drawSurroundings();
+    cube0.endRender(false);
+    glPopMatrix();
+
+    // -x face
+    glPushMatrix();
+    glRotated(180., 0.,0.,1.);
+    glRotated(-90., 0.,1.,0.);
+    cube0.beginRender(GL_TEXTURE_CUBE_MAP_NEGATIVE_X);
+    drawSurroundings();
+    cube0.endRender(false);
+    glPopMatrix();
+
+    // +y face
+    glPushMatrix();
+    glRotated(-90., 1.,0.,0.);
+    cube0.beginRender(GL_TEXTURE_CUBE_MAP_POSITIVE_Y);
+    drawSurroundings();
+    cube0.endRender(false);
+    glPopMatrix();
+
+    // -y face
+    glPushMatrix();
+    glRotated(90., 1.,0.,0.);
+    cube0.beginRender(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y);
+    drawSurroundings();
+    cube0.endRender(false);
+    glPopMatrix();
+
+    // +z face
+    glPushMatrix();
+    glRotated(180., 0.,0.,1.);
+    glRotated(180., 0.,1.,0.);
+    cube0.beginRender(GL_TEXTURE_CUBE_MAP_POSITIVE_Z);
+    drawSurroundings();
+    cube0.endRender(false);
+    glPopMatrix();
+
+    // -z face
+    glPushMatrix();
+    glRotated(180., 0.,0.,1.);
+    cube0.beginRender(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z);
+    drawSurroundings();
+    cube0.endRender();
+    glPopMatrix();
+
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+}
+
+
 // myDisplay
 // The GLUT display function
 void myDisplay()
 {
+    // Update the environment map
+    makeTextures();
 /*    GLenum minfilters[] = 
     { GL_NEAREST_MIPMAP_NEAREST,
       GL_LINEAR_MIPMAP_NEAREST,
@@ -191,7 +372,6 @@ void myDisplay()
         loc = glGetUniformLocationARB(theprog, "mycube0"); //to texture channel
 	if (loc != -1)
 	    glUniform1i(loc, 0);
-	tanloc = glGetAttribLocationARB(theprog, "vtangent_in"); //pass tanloc to draw funcs
     }
 
     // Draw Objects
@@ -205,7 +385,7 @@ void myDisplay()
         waveFun(b2, 1, 2);  // Second set of points.
     }
 
-    drawBezierPatch(numsubdivs, b1, tanloc);
+    drawBezierPatch(numsubdivs, b1);
     drawBezierPatch(numsubdivs, b2);
     documentation();    
 
@@ -356,11 +536,27 @@ void init()
 
     // Texture
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-    glActiveTexture(GL_TEXTURE0);
-    cube0.bind();
 
     // Shaders
     prog1 = makeProgramObjectFromFiles(vshader1fname, fshader1fname);
+    prog2 = makeProgramObjectFromFiles("twoside_v.glsl", "twoside_f.glsl");
+
+    // Textures
+
+    // Make Texture 0
+    glActiveTexture(GL_TEXTURE0);
+    cube0.init(GL_TEXTURE_CUBE_MAP, IMG_WIDTH, IMG_HEIGHT);
+
+    // Set params
+    cube0.bind();
+    glTexParameteri(GL_TEXTURE_CUBE_MAP,
+        GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP,
+        GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP,
+        GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP,
+        GL_TEXTURE_WRAP_T, GL_CLAMP);
 }
 
 // The main
