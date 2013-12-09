@@ -11,8 +11,8 @@ GCCFLAGS = -ansi -pedantic -Wall -Wextra -Wconversion \
 GLFLAGS = -lGL -lGLU -lglut -lGLEW
 # May need to add to above: -lGLEW
 
-#%: %.cpp
-#	g++ -o $@ $< $(GCCFLAGS) $(GLFLAGS)
-#
-texture:
-	g++ -o $@ splinepatch.cpp $(GCCFLAGS) $(GLFLAGS) 
+%: %.cpp
+	g++ -o $@ $< $(GCCFLAGS) $(GLFLAGS)
+
+#texture:
+#	g++ -o $@ splinepatch.cpp $(GCCFLAGS) $(GLFLAGS) 
