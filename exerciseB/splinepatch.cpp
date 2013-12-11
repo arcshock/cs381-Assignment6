@@ -7,97 +7,7 @@
  *     make a wave upon user input that are textured.
  */
 
-// OpenGL/GLUT includes - DO THESE FIRST
-#include <cstdlib>       // Do this before GL/GLUT includes
-using std::exit;
-#ifndef __APPLE__
-# include <GL/glew.h>
-# include <GL/glut.h>    // Includes OpenGL headers as well
-#else
-# include <GLEW/glew.h>
-# include <GLUT/glut.h>  // Apple puts glut.h in a different place
-#endif
-#ifdef _MSC_VER          // Tell MS-Visual Studio about GLEW lib
-# pragma comment(lib, "glew32.lib")
-#endif
-
-#include "lib381/bitmapprinter.h" // For in app doc
-#include "lib381/glslprog.h"      // For GLSL code-handling functions
-#include "lib381/globj.h" 	  // For class Tex2D
-#include "lib381/tshapes.h"	  // For shape drawing funcs
-#include "lib381/rtt.h"	  // For rendering to a texture 
-
-#include <string>
-using std::string;
-#include <iostream>
-using std::cerr; using std::endl; using std::cout;
-#include <sstream>
-using std::ostringstream;
-#include <iomanip>
-using std::setprecision; using std::fixed;
-#include <cmath>
-using std::sin; using std::exp;
-
-// Function prototypes
-void documentation();
-void waveFun(GLdouble *, int, int);
-void drawBezierPatch(int, GLdouble *, int);
-void myDisplay();
-void myIdle();
-void resetZoom();
-void fixShaderFloat(GLfloat *);
-void myKeyboard(unsigned char, int, int);
-void myPassiveMotion(int, int);
-void init();
-void myReshape(int, int);
-
-// Global variables
-const int ESCKEY = 27;         // ASCII value of Escape
-const int startwinsize = 600;  // Start window width & height (pixels)
-int winw = 1, winh = 1;        // Window width, height (pixels)
-bool help = false;
-bool wireFrame;
-
-// Shaders
-bool shaderbool1 = true;
-string vshader1fname;          // Filename for vertex shader source
-string fshader1fname;          // Filename for fragment shader source
-GLhandleARB prog1;             // GLSL Program Object (main)
-GLhandleARB prog2;             // GLSL Program Object (2side)
-GLfloat shaderfloat1 = 1.;
-
-// Textures
-const int IMG_WIDTH = 1024, IMG_HEIGHT = IMG_WIDTH;
-RTT cube0;
-
-int min_nonmip; // 0=NEAREST, 1=LINEAR
-int min_mip;	// 0=NEAREST, 1=LINEAR, 2=NON
-
-// Camera 
-GLdouble viewmatrix[16];       
-int zoom;
-
-// Wave/Spline Patches
-int numsubdivs;                // Number of subdivisions for object
-const int minsubdivs = 1;      //  Minumum of above
-const int maxsubdivs = 50;     //  Maximum of above
-const int PTS = 4;             // Number of control points in a patch
-const int EDGES = 4;           // Sides in a patch
-const int SIZE = PTS*EDGES*3;  // Size of Patch Arrays
-bool wave;                     // Starts the wave propagation.
-GLdouble modd;                 // Value for the waves in the Bezier patches
-
-// Bezier Patches
-GLdouble b1[SIZE] = {
-    3.5,-3.0, 0.0,   2.5,-2.0, 0.0,   1.5,-1.0, 0.0,   1.5, 0.0, 0.0,
-    2.5,-3.0, 0.0,   0.5,-2.0, 0.0,   0.5,-1.0, 0.0,   0.5, 0.0, 0.0,
-   -2.5,-3.0, 0.0,  -0.5,-2.0, 0.0,  -0.5,-1.0, 0.0,  -0.5, 0.0, 0.0,
-   -3.5,-3.0, 0.0,  -2.5,-2.0, 0.0,  -1.5,-1.0, 0.0,  -1.5, 0.0, 0.0};
-GLdouble b2[SIZE] = {
-    1.5, 0.0, 0.0,   1.5, 1.0, 0.0,   2.5, 2.0, 0.0,   3.5, 3.0, 0.0,
-    0.5, 0.0, 0.0,   0.5, 1.0, 0.0,   0.5, 2.0, 0.0,   0.5, 3.0, 0.0,
-   -0.5, 0.0, 0.0,  -0.5, 1.0, 0.0,  -0.5, 2.0, 0.0,  -0.5, 3.0, 0.0,
-   -1.5, 0.0, 0.0,  -1.5, 1.0, 0.0,  -2.5, 2.0, 0.0,  -3.5, 3.0, 0.0};
+#include "splinepatch.h"
 
 // waveFun
 // Makes a wave through one of the axes of a spline patch. 
@@ -128,6 +38,43 @@ void drawBezierPatch(int subdivs, GLdouble *cpts)
     glFrontFace(GL_CCW);
 }
 
+// drawCutSphere
+// Draws a sphere made of different-colored polygons with gaps
+//  between them. Normals face inward.
+// Intended to be drawn at a large size as an interesting background
+//  for the scene.
+void drawCutSphere()
+{
+    const double pi = 3.1415926535898;
+    const double smang = 0.01;
+    const int slices = 32;
+    const int stacks = 24;
+
+    for (int i = 0; i < slices; ++i)
+    {
+        double ia1 = 2.*pi*double(i)/slices + smang;
+        double ia2 = 2.*pi*double(i+1)/slices - smang;
+
+        for (int k = 1; k < stacks-1; ++k)
+        {
+            double ka1 = pi*(double(k)/stacks-0.5) + smang;
+            double ka2 = pi*(double(k+1)/stacks-0.5) - smang;
+
+            glColor3d(0.4*cos(2*ia1)/2.+0.5, 0.5, 0.4*cos(4*ka1)/2.+0.5);
+            glBegin(GL_QUADS);
+                glNormal3d(-cos(ia1)*cos(ka1), -sin(ka1), -sin(ia1)*cos(ka1));
+                glVertex3d( cos(ia1)*cos(ka1),  sin(ka1),  sin(ia1)*cos(ka1));
+                glNormal3d(-cos(ia2)*cos(ka1), -sin(ka1), -sin(ia2)*cos(ka1));
+                glVertex3d( cos(ia2)*cos(ka1),  sin(ka1),  sin(ia2)*cos(ka1));
+                glNormal3d(-cos(ia2)*cos(ka2), -sin(ka2), -sin(ia2)*cos(ka2));
+                glVertex3d( cos(ia2)*cos(ka2),  sin(ka2),  sin(ia2)*cos(ka2));
+                glNormal3d(-cos(ia1)*cos(ka2), -sin(ka2), -sin(ia1)*cos(ka2));
+                glVertex3d( cos(ia1)*cos(ka2),  sin(ka2),  sin(ia1)*cos(ka2));
+            glEnd();
+        }
+    }
+}
+
 void drawSurroundings()
 {
     // CHOOSE PROGRAM OBJECT
@@ -135,23 +82,7 @@ void drawSurroundings()
     
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             theprog = prog2;
-/*  // Shaders used? Wireframe?
-    switch (shade)
-    {
-        case 0:  // 0: filled polygons, use shaders, smooth
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            theprog = prog2;
-            break;
-        case 1:  // 1: filled polygons, no shader
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            theprog = 0;
-            break;
-        case 2:  // 2: wireframe, no shader
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            theprog = 0;
-            break;
-    }
-*/
+
     // Initialize buffer
     glClearColor(0.7f, 0.7f, 0.7f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -162,13 +93,12 @@ void drawSurroundings()
     // No shaders
     glUseProgramObjectARB(0);
 
-/*    // Draw background sphere
+    // Draw background sphere
     glPushMatrix();
-    glRotated(rotangle/2.3, -1.,2.,0.);
+    //glRotated(rotangle/2.3, -1.,2.,0.);
     glScaled(10., 10., 10.);
     drawCutSphere();
     glPopMatrix();
-*/    
 
     // Position light source 0 & draw ball there
     // Also give spot direction
@@ -315,36 +245,16 @@ void myDisplay()
 {
     // Update the environment map
     makeTextures();
-/*    GLenum minfilters[] = 
-    { GL_NEAREST_MIPMAP_NEAREST,
-      GL_LINEAR_MIPMAP_NEAREST,
-      GL_NEAREST_MIPMAP_LINEAR,
-      GL_LINEAR_MIPMAP_LINEAR,
-      GL_NEAREST,
-      GL_LINEAR };
-    
-    glActiveTexture(GL_TEXTURE0);
-    tex0.bind();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-        minfilters[min_mip*2 + min_nonmip]);
-*/
-    glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    GLhandleARB theprog;  // CURRENTLY-used program object or 0 if none
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // Activate shaders
-    theprog = prog1;
-/*
-    // Texture transform
-    glActiveTexture(GL_TEXTURE0);
-    glMatrixMode(GL_TEXTURE);
-    glLoadIdentity();
-//    glRotated(texrotang, 0.0, 0.0, 1.0);
-    glMatrixMode(GL_MODELVIEW);
-*/
     glEnable(GL_DEPTH_TEST);    // Set up 3D
     glLoadIdentity();           // Start with camera.
     glMultMatrixd(viewmatrix);
+
+    drawSurroundings();     // Draw all non-reflection-mapped objs.
+    GLhandleARB theprog;    // Currently-used program obj. or 0.
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    theprog = prog1;
 
     // Position light source 0 & draw ball there
     glPushMatrix();
