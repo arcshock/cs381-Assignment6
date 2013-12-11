@@ -75,6 +75,20 @@ void drawCutSphere()
     }
 }
 
+void drawTeaPot(GLdouble tx, GLdouble ty, GLdouble tz,
+                GLdouble sx, GLdouble sy, GLdouble sz,
+                GLdouble r, GLdouble g, GLdouble b, GLdouble size)
+    {
+        glPushMatrix();
+            glTranslated(tx, ty, tz);
+            glScaled(sx, sy, sz);
+            glColor3d(r, g, b);
+            glFrontFace(GL_CW); // Teapot has stupid facing
+            glutSolidTeapot(size);
+            glFrontFace(GL_CCW);
+        glPopMatrix();
+    }
+
 void drawSurroundings()
 {
     // CHOOSE PROGRAM OBJECT
@@ -87,11 +101,6 @@ void drawSurroundings()
     glClearColor(0.7f, 0.7f, 0.7f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
-
-    // UNLIT OBJECTS
-
-    // No shaders
-    glUseProgramObjectARB(0);
 
     // Draw background sphere
     glPushMatrix();
@@ -138,39 +147,11 @@ void drawSurroundings()
             glUniform1i(loc, 0);
     }
 
+
     // Draw left side object
-    glPushMatrix();
-    glTranslated(-2.5, 0., 0.);
-//    glRotated(-rotangle/1.4, 1.,0.,0.);
-    glScaled(0.5, 0.5, 0.5);
-    glColor3d(0., 0.5, 1.0);
-    glFrontFace(GL_CW);  // Teapot has polygons facing in
-    glutSolidTeapot(1.);
-    glFrontFace(GL_CCW);
-    glPopMatrix();
-
-    // Draw right side object
-    glPushMatrix();
-    glTranslated(2.5, 0., 0.);
-//    glRotated(rotangle/1.4, 1.,0.,0.);
-    glScaled(0.5, 0.5, 0.5);
-    glColor3d(0.5, 0., 0.8);
-    glFrontFace(GL_CW);  // Teapot has polygons facing in
-    glutSolidTeapot(1.);
-    glFrontFace(GL_CCW);
-    glPopMatrix();
-
-    // Draw back object
-    glPushMatrix();
-    glTranslated(0., 0.5, -2.5);
-//    glRotated(rotangle/1.4, 1.,0.,0.);
-    glScaled(0.5, 0.5, 0.5);
-    glColor3d(0.5, 0.8, 0.);
-    glFrontFace(GL_CW);  // Teapot has polygons facing in
-    glutSolidTeapot(1.);
-    glFrontFace(GL_CCW);
-    glPopMatrix();
-    
+    drawTeaPot(-2.5, 0.0,-3.0,   0.5, 0.5, 0.5,   0.0, 0.5, 1.0,   1.0);
+    drawTeaPot( 2.5, 0.0,-3.0,   0.5, 0.5, 0.5,   0.5, 0.0, 0.8,   1.0);
+    drawTeaPot( 0.0, 0.5,-2.5,   0.5, 0.5, 0.5,   0.5, 0.8, 0.0,   1.0);
 }
 
 void makeTextures()
@@ -250,6 +231,7 @@ void myDisplay()
     glLoadIdentity();           // Start with camera.
     glMultMatrixd(viewmatrix);
 
+    glTranslated(0,0, -zoom);   // Position objects out at distance
     drawSurroundings();     // Draw all non-reflection-mapped objs.
     GLhandleARB theprog;    // Currently-used program obj. or 0.
 
@@ -285,7 +267,6 @@ void myDisplay()
     }
 
     // Draw Objects
-    glTranslated(0,0, -zoom);   // Position objects out at distance
     if(wave)
     {
         modd += 0.1;
@@ -433,6 +414,44 @@ void myReshape(int w, int h)
     glMatrixMode(GL_MODELVIEW);  // Always go back to model/view mode
 }
 
+// documentation
+void documentation()
+{
+    // Draw documentation
+    glDisable(GL_DEPTH_TEST);
+    glLoadIdentity();
+    glMatrixMode(GL_PROJECTION);  // Set up simple ortho projection
+    glPushMatrix();
+        glLoadIdentity();
+        gluOrtho2D(0., double(winw), 0., double(winh));
+        glColor3d(0., 0., 0.);        // Black text
+        BitmapPrinter p(20., winh - 20., 20.);
+        if(help)
+        {
+            ostringstream os1;
+            ostringstream os2;
+            os1 << fixed << setprecision(2) << shaderfloat1;
+            os2 << fixed << setprecision(2) << numsubdivs;
+            p.print("Arrows         Rotate Scene");
+            p.print("[ ]            Change Lighting (" + os1.str() + ")");
+            p.print("( )            Change Subdivisions (" + os2.str() + ")");
+            p.print("+/-            Zoom in/out");
+            p.print("r              Reset Camera");
+            p.print("space          Distort Spline");
+            p.print(string("w              Wire-Frame (" )
+	    		+ (wireFrame ? "true" : "false") + ")");
+            p.print(string("f              Lighting (" )
+                        + (shaderbool1 ? "true" : "false") + ")");
+        }
+        else
+        {
+            p.print("h              help");
+        }
+        p.print("Esc            Quit");
+    glPopMatrix();                // Restore prev projection
+    glMatrixMode(GL_MODELVIEW);
+}
+
 // init
 // Initialize GL states & global data
 void init()
@@ -504,39 +523,3 @@ int main(int argc, char ** argv)
     return 0;
 }
 
-void documentation()
-{
-    // Draw documentation
-    glDisable(GL_DEPTH_TEST);
-    glLoadIdentity();
-    glMatrixMode(GL_PROJECTION);  // Set up simple ortho projection
-    glPushMatrix();
-        glLoadIdentity();
-        gluOrtho2D(0., double(winw), 0., double(winh));
-        glColor3d(0., 0., 0.);        // Black text
-        BitmapPrinter p(20., winh - 20., 20.);
-        if(help)
-        {
-            ostringstream os1;
-            ostringstream os2;
-            os1 << fixed << setprecision(2) << shaderfloat1;
-            os2 << fixed << setprecision(2) << numsubdivs;
-            p.print("Arrows         Rotate Scene");
-            p.print("[ ]            Change Lighting (" + os1.str() + ")");
-            p.print("( )            Change Subdivisions (" + os2.str() + ")");
-            p.print("+/-            Zoom in/out");
-            p.print("r              Reset Camera");
-            p.print("space          Distort Spline");
-            p.print(string("w              Wire-Frame (" )
-	    		+ (wireFrame ? "true" : "false") + ")");
-            p.print(string("f              Lighting (" )
-                        + (shaderbool1 ? "true" : "false") + ")");
-        }
-        else
-        {
-            p.print("h              help");
-        }
-        p.print("Esc            Quit");
-    glPopMatrix();                // Restore prev projection
-    glMatrixMode(GL_MODELVIEW);
-}
