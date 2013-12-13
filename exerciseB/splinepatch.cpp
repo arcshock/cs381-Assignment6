@@ -4,7 +4,8 @@
  * File Name: splinepatch.cpp
  * Last Modified: Mon Dec  9 04:50:40 AKST 2013
  * Description: A pair of spline plains, patched together, that will
- *     make a wave upon user input that are textured.
+ *     make a wave upon user input that are textured. Borrows heavily
+ *     from hw5 and some from sample Chappell code.
  */
 
 #include "splinepatch.h"
@@ -40,9 +41,7 @@ void drawBezierPatch(int subdivs, GLdouble *cpts)
 
 // drawCutSphere
 // Draws a sphere made of different-colored polygons with gaps
-//  between them. Normals face inward.
-// Intended to be drawn at a large size as an interesting background
-//  for the scene.
+//  between them. Normals face inward. Borrowed from Chappell.
 void drawCutSphere()
 {
     const double pi = 3.1415926535898;
@@ -75,6 +74,7 @@ void drawCutSphere()
     }
 }
 
+// Function to draw teapots at various locations on the screen.
 void drawTeaPot(GLdouble tx, GLdouble ty, GLdouble tz,
                 GLdouble sx, GLdouble sy, GLdouble sz,
                 GLdouble r, GLdouble g, GLdouble b, GLdouble size)
@@ -89,13 +89,14 @@ void drawTeaPot(GLdouble tx, GLdouble ty, GLdouble tz,
         glPopMatrix();
     }
 
+// Draws the actual, unlit, objects in the scene.
 void drawSurroundings()
 {
     // CHOOSE PROGRAM OBJECT
     GLhandleARB theprog;  // CURRENTLY-used program object or 0 if none
     
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            theprog = prog2;
+    theprog = 0;
 
     // Initialize buffer
     glClearColor(0.7f, 0.7f, 0.7f, 1.0f);
@@ -104,7 +105,6 @@ void drawSurroundings()
 
     // Draw background sphere
     glPushMatrix();
-    //glRotated(rotangle/2.3, -1.,2.,0.);
     glScaled(10., 10., 10.);
     drawCutSphere();
     glPopMatrix();
@@ -112,9 +112,7 @@ void drawSurroundings()
     // Position light source 0 & draw ball there
     // Also give spot direction
     glPushMatrix();
-    glTranslated(0.0, 0.0, 1.0);
-//    glRotated(lightrotang, 1.,0.,0.);
-    glTranslated(-1., 1., 1.);
+    glTranslated(-1., 1., 3.);
     GLfloat origin4[] = { 0.f, 0.f, 0.f, 1.f };
     glLightfv(GL_LIGHT0, GL_POSITION, origin4);
     GLfloat spotdir[] = { 1.f, -1.f, -1.f };
@@ -124,7 +122,6 @@ void drawSurroundings()
     glPopMatrix();
 
     // LIT OBJECTS
-
     // Make program object (if any) active
     glUseProgramObjectARB(theprog);
 
@@ -149,8 +146,8 @@ void drawSurroundings()
 
 
     // Draw left side object
-    drawTeaPot(-2.5, 0.0,-3.0,   0.5, 0.5, 0.5,   0.0, 0.5, 1.0,   1.0);
-    drawTeaPot( 2.5, 0.0,-3.0,   0.5, 0.5, 0.5,   0.5, 0.0, 0.8,   1.0);
+    drawTeaPot(-2.5, 0.0,-5.0,   0.5, 0.5, 0.5,   0.0, 0.5, 1.0,   1.0);
+    drawTeaPot( 2.5, 0.0,-5.0,   0.5, 0.5, 0.5,   0.5, 0.0, 0.8,   1.0);
     drawTeaPot( 0.0, 0.5,-2.5,   0.5, 0.5, 0.5,   0.5, 0.8, 0.0,   1.0);
 }
 
@@ -238,33 +235,8 @@ void myDisplay()
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     theprog = prog1;
 
-    // Position light source 0 & draw ball there
-    glPushMatrix();
-        glTranslated(-1., 1., 2.);  // Starting left, up, behind camera
-        GLfloat origin[] = { 0.f, 0.f, 0.f, 1.f };
-        glLightfv(GL_LIGHT0, GL_POSITION, origin);
-        glUseProgramObjectARB(0);
-        glColor3d(1., 1., 1.);          // white ball
-        glutSolidSphere(.5, 20, 15);   // obj for light source
-    glPopMatrix();
 
     glUseProgramObjectARB(theprog);
-
-    //Send info to shader
-    GLint tanloc = -1;
-    if (theprog)
-    {
-        GLint loc;  // Location for shader vars
-        loc = glGetUniformLocationARB(theprog, "myb1");
-        if (loc != -1)
-            glUniform1i(loc, shaderbool1);
-        loc = glGetUniformLocationARB(theprog, "myf1");
-        if (loc != -1)
-            glUniform1f(loc, shaderfloat1);
-        loc = glGetUniformLocationARB(theprog, "mycube0"); //to texture channel
-	if (loc != -1)
-	    glUniform1i(loc, 0);
-    }
 
     // Draw Objects
     if(wave)
@@ -329,9 +301,6 @@ void myKeyboard(unsigned char key, int x, int y)
         break;
     case '-':
         ++zoom;
-        break;
-    case '.':   // Insert a splash at point
-        
         break;
     case 'R':
     case 'r':
@@ -467,7 +436,7 @@ void init()
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
     // Shaders
-    prog1 = makeProgramObjectFromFiles(vshader1fname, fshader1fname);
+    prog1 = makeProgramObjectFromFiles(vshader1fname, fshader1fname); 
     prog2 = makeProgramObjectFromFiles("twoside_v.glsl", "twoside_f.glsl");
 
     // Textures
@@ -489,6 +458,7 @@ void init()
 }
 
 // The main
+
 int main(int argc, char ** argv)
 {
     // Initilization of OpenGL/GLUT
@@ -501,7 +471,7 @@ int main(int argc, char ** argv)
     // Creating the view window
     glutInitWindowSize(startwinsize, startwinsize);
     glutInitWindowPosition(50, 50);
-    glutCreateWindow("CS 381 - Shaders, Normals, Lighting, and Splines Oh My!");
+    glutCreateWindow("CS 381 - Shaders, Lighting, and Splines Oh My!");
 
     // Init GLEW & check status - exit on failure
     if (glewInit() != GLEW_OK)
