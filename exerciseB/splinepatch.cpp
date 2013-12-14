@@ -156,13 +156,14 @@ void makeTextures()
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
-    gluPerspective(90., 1., 0.01, 10.);
+    gluPerspective(90., 1., 0.1, 10.);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    glMultMatrixd(viewmatrix);
+//    glMultMatrixd(viewmatrix);
 
     // +x face
     glPushMatrix();
+    glMultMatrixd(viewmatrix);
     glRotated(180., 0.,0.,1.);
     glRotated(90., 0.,1.,0.);
     cube0.beginRender(GL_TEXTURE_CUBE_MAP_POSITIVE_X);
@@ -172,6 +173,7 @@ void makeTextures()
 
     // -x face
     glPushMatrix();
+    glMultMatrixd(viewmatrix);
     glRotated(180., 0.,0.,1.);
     glRotated(-90., 0.,1.,0.);
     cube0.beginRender(GL_TEXTURE_CUBE_MAP_NEGATIVE_X);
@@ -181,6 +183,7 @@ void makeTextures()
 
     // +y face
     glPushMatrix();
+    glMultMatrixd(viewmatrix);
     glRotated(-90., 1.,0.,0.);
     cube0.beginRender(GL_TEXTURE_CUBE_MAP_POSITIVE_Y);
     drawSurroundings();
@@ -189,6 +192,7 @@ void makeTextures()
 
     // -y face
     glPushMatrix();
+    glMultMatrixd(viewmatrix);
     glRotated(90., 1.,0.,0.);
     cube0.beginRender(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y);
     drawSurroundings();
@@ -197,6 +201,7 @@ void makeTextures()
 
     // +z face
     glPushMatrix();
+    glMultMatrixd(viewmatrix);
     glRotated(180., 0.,0.,1.);
     glRotated(180., 0.,1.,0.);
     cube0.beginRender(GL_TEXTURE_CUBE_MAP_POSITIVE_Z);
@@ -206,6 +211,7 @@ void makeTextures()
 
     // -z face
     glPushMatrix();
+    glMultMatrixd(viewmatrix);
     glRotated(180., 0.,0.,1.);
     cube0.beginRender(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z);
     drawSurroundings();
