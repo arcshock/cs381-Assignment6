@@ -156,9 +156,10 @@ void makeTextures()
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
-    gluPerspective(90., 1., 0.1, 10.);
+    gluPerspective(90., 1., 0.01, 10.);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+    glMultMatrixd(viewmatrix);
 
     // +x face
     glPushMatrix();
@@ -237,6 +238,30 @@ void myDisplay()
 
 
     glUseProgramObjectARB(theprog);
+    if (rotL)
+    {
+//        rotangleL += rotspeed * elapsedtime;
+        glRotated(-rotangleL, 0., 1., 0.);
+//        glutPostRedisplay();    
+    }
+    if (rotR)
+    {
+//        rotangleR += rotspeed * elapsedtime;
+	glRotated(rotangleR, 0.0, 1.0, 0.0);
+//        glutPostRedisplay();
+    }
+    if (rotU)
+    {
+//        rotangleU += rotspeed * elapsedtime;
+	glRotated(-rotangleU, 1.0, 0.0, 0.0);
+//        glutPostRedisplay();
+    }
+    if (rotD)
+    {
+//        rotangleD += rotspeed * elapsedtime;
+	glRotated(rotangleD, 1.0, 0.0, 0.0);
+//        glutPostRedisplay();
+    }
 
     // Draw Objects
     if(wave)
@@ -259,7 +284,52 @@ void myDisplay()
 // The GLUT idle function
 void myIdle()
 {
-    glutPostRedisplay();
+    // Compute elapsed time since last movement
+    double currtime = glutGet(GLUT_ELAPSED_TIME) / 1000.0;
+    double elapsedtime = currtime - savetime;
+    savetime = currtime;
+    if (elapsedtime > 0.1)
+    	elapsedtime = 0.1;
+   
+    std::cout << std::endl;
+    std::cout << rotR << std::endl;
+    std::cout << rotL << std::endl;
+    std::cout << rotU << std::endl;
+    std::cout << rotD << std::endl;
+    std::cout << endl;
+
+    std::cout << std::endl;
+    std::cout << rotangleL << std::endl;
+    std::cout << rotangleR << std::endl;
+    std::cout << rotangleU << std::endl;
+    std::cout << rotangleD << std::endl;
+    std::cout << std::endl;
+    // Rot objs
+    if (rotL)
+    {
+        rotangleL += rotspeed * elapsedtime;
+//        glRotated(-rotangleL, 0., 1., 0.);
+        glutPostRedisplay();    
+    }
+    if (rotR)
+    {
+        rotangleR += rotspeed * elapsedtime;
+//	glRotated(rotangleR, 0.0, 1.0, 0.0);
+        glutPostRedisplay();
+    }
+    if (rotU)
+    {
+        rotangleU += rotspeed * elapsedtime;
+//	glRotated(-rotangleU, 1.0, 0.0, 0.0);
+        glutPostRedisplay();
+    }
+    if (rotD)
+    {
+        rotangleD += rotspeed * elapsedtime;
+//	glRotated(rotangleD, 1.0, 0.0, 0.0);
+        glutPostRedisplay();
+    }
+
     // Print OpenGL errors, if there are any (for debugging)
     static int error_count = 0;
     if (GLenum err = glGetError())
@@ -349,16 +419,20 @@ void mySpecial(int key, int x, int y)
     switch (key)
     {
         case GLUT_KEY_LEFT:
-            glRotated(-5, 0., 1., 0.);
+            //glRotated(-5, 0., 1., 0.);
+	    rotL = !rotL;
             break;
         case GLUT_KEY_RIGHT:
-            glRotated(5, 0., 1., 0.);
+            //glRotated(5, 0., 1., 0.);
+	    rotR = !rotR;
             break;
         case GLUT_KEY_UP:
-            glRotated(-5, 1., 0., 0.);
+            //glRotated(-5, 1., 0., 0.);
+	    rotU = !rotU;
             break;
         case GLUT_KEY_DOWN:
-            glRotated(5, 1., 0., 0.);
+            //glRotated(5, 1., 0., 0.);
+	    rotD = !rotD;
             break;
     }
     glTranslated(0., 0., zoom);
@@ -431,6 +505,15 @@ void init()
     wave = false;
     numsubdivs = 10;
     wireFrame = false;
+    rotL = true;
+    rotR = false;
+    rotU = false;
+    rotD = false;
+
+    rotangleL = 5.0;
+    rotangleR = 5.0;
+    rotangleU = 5.0;
+    rotangleD = 5.0;
 
     // Texture
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
