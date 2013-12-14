@@ -78,16 +78,16 @@ void drawCutSphere()
 void drawTeaPot(GLdouble tx, GLdouble ty, GLdouble tz,
                 GLdouble sx, GLdouble sy, GLdouble sz,
                 GLdouble r, GLdouble g, GLdouble b, GLdouble size)
-    {
-        glPushMatrix();
-            glTranslated(tx, ty, tz);
-            glScaled(sx, sy, sz);
-            glColor3d(r, g, b);
-            glFrontFace(GL_CW); // Teapot has stupid facing
-            glutSolidTeapot(size);
-            glFrontFace(GL_CCW);
-        glPopMatrix();
-    }
+{
+    glPushMatrix();
+        glTranslated(tx, ty, tz);
+        glScaled(sx, sy, sz);
+        glColor3d(r, g, b);
+        glFrontFace(GL_CW); // Teapot has stupid facing
+        glutSolidTeapot(size);
+        glFrontFace(GL_CCW);
+    glPopMatrix();
+}
 
 // Draws the actual, unlit, objects in the scene.
 void drawSurroundings()
@@ -245,32 +245,7 @@ void myDisplay()
     glUseProgramObjectARB(theprog);
         glRotated(rotangleSide, 0., 1., 0.);
 	glRotated(rotangleVert, 1.0, 0.0, 0.0);
-/*    
-    if (rotL)
-    {
-//        rotangleL += rotspeed * elapsedtime;
-        glRotated(-rotangleL, 0., 1., 0.);
-//        glutPostRedisplay();    
-    }
-    if (rotR)
-    {
-//        rotangleR += rotspeed * elapsedtime;
-	glRotated(rotangleR, 0.0, 1.0, 0.0);
-//        glutPostRedisplay();
-    }
-    if (rotU)
-    {
-//        rotangleU += rotspeed * elapsedtime;
-	glRotated(-rotangleU, 1.0, 0.0, 0.0);
-//        glutPostRedisplay();
-    }
-    if (rotD)
-    {
-//        rotangleD += rotspeed * elapsedtime;
-	glRotated(rotangleD, 1.0, 0.0, 0.0);
-//        glutPostRedisplay();
-    }
-*/
+    
     // Draw Objects
     if(wave)
     {
@@ -298,43 +273,26 @@ void myIdle()
     savetime = currtime;
     if (elapsedtime > 0.1)
     	elapsedtime = 0.1;
-/*   
-    std::cout << std::endl;
-    std::cout << rotR << std::endl;
-    std::cout << rotL << std::endl;
-    std::cout << rotU << std::endl;
-    std::cout << rotD << std::endl;
-    std::cout << endl;
-*/
-    std::cout << std::endl;
-    std::cout << rotangleSide << std::endl;
-//    std::cout << rotangleR << std::endl;
-    std::cout << rotangleVert << std::endl;
-//    std::cout << rotangleD << std::endl;
-    std::cout << std::endl;
+    
     // Rot objs
     if (rotL)
     {
         rotangleSide += rotspeed * elapsedtime;
-//        glRotated(-rotangleL, 0., 1., 0.);
         glutPostRedisplay();    
     }
     if (rotR)
     {
         rotangleSide -= rotspeed * elapsedtime;
-//	glRotated(rotangleR, 0.0, 1.0, 0.0);
         glutPostRedisplay();
     }
     if (rotU)
     {
         rotangleVert += rotspeed * elapsedtime;
-//	glRotated(-rotangleU, 1.0, 0.0, 0.0);
         glutPostRedisplay();
     }
     if (rotD)
     {
         rotangleVert -= rotspeed * elapsedtime;
-//	glRotated(rotangleD, 1.0, 0.0, 0.0);
         glutPostRedisplay();
     }
 
@@ -404,6 +362,7 @@ void myKeyboard(unsigned char key, int x, int y)
     case 'H':
         help = !help;
         break;
+    case 'F':
     case 'f':     // Space: toggle shader bool
         shaderbool1 = !shaderbool1;
         break;
@@ -426,30 +385,26 @@ void mySpecial(int key, int x, int y)
     glTranslated(0., 0., -zoom);
     switch (key)
     {
-        case GLUT_KEY_LEFT:
-            //glRotated(-5, 0., 1., 0.);
-	    rotL = !rotL;
-	    if (rotR)
-	        rotR = !rotR;
-            break;
-        case GLUT_KEY_RIGHT:
-            //glRotated(5, 0., 1., 0.);
+    case GLUT_KEY_LEFT:
+        rotL = !rotL;
+	if (rotR)
 	    rotR = !rotR;
-	    if (rotL)
-	        rotL = !rotL;
-            break;
-        case GLUT_KEY_UP:
-            //glRotated(-5, 1., 0., 0.);
-	    rotU = !rotU;
-	    if (rotD)
-	        rotD = !rotD;
-            break;
-        case GLUT_KEY_DOWN:
-            //glRotated(5, 1., 0., 0.);
-	    rotD = !rotD;
-	    if (rotU)
-                rotU = !rotU;
-            break;
+        break;
+    case GLUT_KEY_RIGHT:
+        rotR = !rotR;
+        if (rotL)
+            rotL = !rotL;
+        break;
+    case GLUT_KEY_UP:
+        rotU = !rotU;
+        if (rotD)
+            rotD = !rotD;
+        break;
+    case GLUT_KEY_DOWN:
+        rotD = !rotD;
+        if (rotU)
+            rotU = !rotU;
+        break;
     }
     glTranslated(0., 0., zoom);
     glMultMatrixd(viewmatrix);
@@ -491,7 +446,7 @@ void documentation()
             ostringstream os2;
             os1 << fixed << setprecision(2) << shaderfloat1;
             os2 << fixed << setprecision(2) << numsubdivs;
-            p.print("Arrows         Rotate Scene");
+            p.print("Arrows         Rotate Plane");
             p.print("[ ]            Change Lighting (" + os1.str() + ")");
             p.print("( )            Change Subdivisions (" + os2.str() + ")");
             p.print("+/-            Zoom in/out");
@@ -521,20 +476,16 @@ void init()
     wave = false;
     numsubdivs = 10;
     wireFrame = false;
+    
+    // init rotation
     rotL = true;
     rotR = false;
     rotU = false;
     rotD = false;
 
-
     rotangleSide = 0.0;
     rotangleVert = 0.0;
-/*
-    rotangleL = 0.0;
-    rotangleR = 0.0;
-    rotangleU = 0.0;
-    rotangleD = 0.0;
-*/
+    
     // Texture
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
@@ -561,7 +512,6 @@ void init()
 }
 
 // The main
-
 int main(int argc, char ** argv)
 {
     // Initilization of OpenGL/GLUT
@@ -574,7 +524,7 @@ int main(int argc, char ** argv)
     // Creating the view window
     glutInitWindowSize(startwinsize, startwinsize);
     glutInitWindowPosition(50, 50);
-    glutCreateWindow("CS 381 - Shaders, Lighting, and Splines Oh My!");
+    glutCreateWindow("CS 381 - Wobbly Goodness!");
 
     // Init GLEW & check status - exit on failure
     if (glewInit() != GLEW_OK)
