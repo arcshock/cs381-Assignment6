@@ -54,6 +54,16 @@ const int startwinsize = 600;  // Start window width & height (pixels)
 int winw = 1, winh = 1;        // Window width, height (pixels)
 bool help = false;
 bool wireFrame;
+double savetime;
+double rotangleL;
+double rotangleR;
+double rotangleU;
+double rotangleD;
+const double rotspeed = 40.0;
+bool rotL;
+bool rotR;
+bool rotU;
+bool rotD;
 
 // Shaders
 string vshader1fname;          // Filename for vertex shader source
