@@ -1,5 +1,8 @@
 /* Paul Gentemann 
  * Bucky Frost
+ * CS 381 
+ * Assignment 6
+ * Exercise B
  * Description : Headers for splinepatch.cpp
  * 
  */

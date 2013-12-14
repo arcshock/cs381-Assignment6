@@ -1,11 +1,14 @@
 /* Authors: Bucky Frost
  * 	    Paul Gentemann
  * CS 381
+ * Assignment 6
+ * Exercise B
  * File Name: splinepatch.cpp
  * Last Modified: Mon Dec  9 04:50:40 AKST 2013
  * Description: A pair of spline plains, patched together, that will
  *     make a wave upon user input that are textured. Borrows heavily
- *     from hw5 and some from sample Chappell code.
+ *     from hw5 and some from sample Chappell code. The texture 
+ *     reflects the surrounding world in a magnified view.
  */
 
 #include "splinepatch.h"
@@ -158,7 +161,6 @@ void makeTextures()
     gluPerspective(90., 1., 0.1, 10.);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-//    glMultMatrixd(viewmatrix);
 
     // +x face
     glPushMatrix();
